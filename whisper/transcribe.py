@@ -26,6 +26,7 @@ def transcribe(
     logprob_threshold: Optional[float] = -1.0,
     no_speech_threshold: Optional[float] = 0.6,
     condition_on_previous_text: bool = True,
+    celery_app=None,
     **decode_options,
 ):
     """
@@ -240,6 +241,15 @@ def transcribe(
                 prompt_reset_since = len(all_tokens)
 
             # update progress bar
+            _current = min(num_frames, seek)
+            percent = (_current / num_frames) * 100
+            
+            if celery_task:
+                celery_task.update_state(
+                    state="Transcribing",
+                    meta={"percent": percent},
+                )
+                
             pbar.update(min(num_frames, seek) - previous_seek_value)
             previous_seek_value = seek
 
