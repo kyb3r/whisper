@@ -171,7 +171,7 @@ def transcribe(
         if verbose:
             print(f"[{format_timestamp(start)} --> {format_timestamp(end)}] {text}")
         
-        return f"[{format_timestamp(start)} --> {format_timestamp(end)}] {text}\n"
+        logging_transcript += f"[{format_timestamp(start)} --> {format_timestamp(end)}] {text}\n"
 
     # show the progress bar when verbose is False (otherwise the transcribed text will be printed)
     num_frames = mel.shape[-1]
@@ -210,7 +210,7 @@ def transcribe(
                     end_timestamp_position = (
                         sliced_tokens[-1].item() - tokenizer.timestamp_begin
                     )
-                    logging_chunk = add_segment(
+                    add_segment(
                         start=timestamp_offset + start_timestamp_position * time_precision,
                         end=timestamp_offset + end_timestamp_position * time_precision,
                         text_tokens=sliced_tokens[1:-1],
@@ -231,7 +231,7 @@ def transcribe(
                     last_timestamp_position = timestamps[-1].item() - tokenizer.timestamp_begin
                     duration = last_timestamp_position * time_precision
 
-                logging_chunk = add_segment(
+                add_segment(
                     start=timestamp_offset,
                     end=timestamp_offset + duration,
                     text_tokens=tokens,
@@ -250,8 +250,6 @@ def transcribe(
             percent = (_current / num_frames) * 100
             
             if celery_task:
-                logging_transcript += logging_chunk
-
                 celery_task.update_state(
                     state="Transcribing",
                     meta={
