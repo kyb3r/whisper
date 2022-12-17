@@ -100,6 +100,8 @@ def transcribe(
     task = decode_options.get("task", "transcribe")
     tokenizer = get_tokenizer(model.is_multilingual, language=language, task=task)
 
+    logging_transcript = ""
+
     def decode_with_fallback(segment: torch.Tensor) -> DecodingResult:
         temperatures = [temperature] if isinstance(temperature, (int, float)) else temperature
         decode_result = None
@@ -165,8 +167,11 @@ def transcribe(
                 "no_speech_prob": result.no_speech_prob,
             }
         )
+
         if verbose:
             print(f"[{format_timestamp(start)} --> {format_timestamp(end)}] {text}")
+        
+        return f"[{format_timestamp(start)} --> {format_timestamp(end)}] {text}\n"
 
     # show the progress bar when verbose is False (otherwise the transcribed text will be printed)
     num_frames = mel.shape[-1]
@@ -205,7 +210,7 @@ def transcribe(
                     end_timestamp_position = (
                         sliced_tokens[-1].item() - tokenizer.timestamp_begin
                     )
-                    add_segment(
+                    logging_chunk = add_segment(
                         start=timestamp_offset + start_timestamp_position * time_precision,
                         end=timestamp_offset + end_timestamp_position * time_precision,
                         text_tokens=sliced_tokens[1:-1],
@@ -226,7 +231,7 @@ def transcribe(
                     last_timestamp_position = timestamps[-1].item() - tokenizer.timestamp_begin
                     duration = last_timestamp_position * time_precision
 
-                add_segment(
+                logging_chunk = add_segment(
                     start=timestamp_offset,
                     end=timestamp_offset + duration,
                     text_tokens=tokens,
@@ -245,10 +250,15 @@ def transcribe(
             percent = (_current / num_frames) * 100
             
             if celery_task:
+                logging_transcript += logging_chunk
+
                 celery_task.update_state(
                     state="Transcribing",
-                    meta={"percent": percent},
-                )
+                    meta={
+                        "percent": percent,
+                        "transcript": logging_transcript
+                        }
+                    )
                 
             pbar.update(min(num_frames, seek) - previous_seek_value)
             previous_seek_value = seek
