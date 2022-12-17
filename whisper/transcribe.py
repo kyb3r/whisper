@@ -100,7 +100,6 @@ def transcribe(
     task = decode_options.get("task", "transcribe")
     tokenizer = get_tokenizer(model.is_multilingual, language=language, task=task)
 
-    logging_transcript = ""
 
     def decode_with_fallback(segment: torch.Tensor) -> DecodingResult:
         temperatures = [temperature] if isinstance(temperature, (int, float)) else temperature
@@ -139,6 +138,7 @@ def transcribe(
     )  # time per output token: 0.02 (seconds)
     all_tokens = []
     all_segments = []
+    logging_transcript = []
     prompt_reset_since = 0
 
     initial_prompt = decode_options.pop("initial_prompt", None) or []
@@ -171,7 +171,7 @@ def transcribe(
         if verbose:
             print(f"[{format_timestamp(start)} --> {format_timestamp(end)}] {text}")
         
-        logging_transcript += f"[{format_timestamp(start)} --> {format_timestamp(end)}] {text}\n"
+        logging_transcript.append(f"[{format_timestamp(start)} --> {format_timestamp(end)}] {text}")
 
     # show the progress bar when verbose is False (otherwise the transcribed text will be printed)
     num_frames = mel.shape[-1]
@@ -254,7 +254,7 @@ def transcribe(
                     state="Transcribing",
                     meta={
                         "percent": percent,
-                        "transcript": logging_transcript
+                        "transcript": "\n".join(logging_transcript)
                         }
                     )
                 
