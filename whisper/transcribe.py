@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 import torch
 import tqdm
+import time
 
 from .audio import SAMPLE_RATE, N_FRAMES, HOP_LENGTH, pad_or_trim, log_mel_spectrogram
 from .decoding import DecodingOptions, DecodingResult
@@ -253,6 +254,7 @@ def transcribe(
                 celery_task.update_state(
                     state="Transcribing",
                     meta={
+                        "heartbeat": time.time(),
                         "percent": percent,
                         "transcript": "\n".join(logging_transcript)
                         }
