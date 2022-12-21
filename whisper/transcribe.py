@@ -140,6 +140,7 @@ def transcribe(
     all_tokens = []
     all_segments = []
     logging_transcript = []
+    start_time = time.monotonic()
     prompt_reset_since = 0
 
     initial_prompt = decode_options.pop("initial_prompt", None) or []
@@ -256,7 +257,8 @@ def transcribe(
                     meta={
                         "heartbeat": time.time(),
                         "percent": percent,
-                        "transcript": "\n".join(logging_transcript)
+                        "transcript": "\n".join(logging_transcript),
+                        "seconds_elapsed": time.monotonic() - start_time
                         }
                     )
                 
